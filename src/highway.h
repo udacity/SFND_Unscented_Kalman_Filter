@@ -1,3 +1,6 @@
+/* \author Aaron Brown */
+// Handle logic for creating traffic on highway and animating it
+
 #include "render/render.h"
 #include "tools.h"
 
@@ -6,16 +9,20 @@ class Highway
 public:
 
 	std::vector<Car> traffic;
+	Car egoCar;
 	Tools tools;
+	std::vector<bool> trackCars;
 
 	Highway(pcl::visualization::PCLVisualizer::Ptr& viewer)
 	{
 
+		// Set which cars to track with UKF
+		trackCars = {true,true,true};
+
 		tools = Tools();
 	
-		Car egoCar(Vect3(0, 0, 0), Vect3(4, 2, 2), Color(0, 1, 0), 0, 0, 2, "egoCar");
-		traffic.push_back(egoCar);
-	
+		egoCar = Car(Vect3(0, 0, 0), Vect3(4, 2, 2), Color(0, 1, 0), 0, 0, 2, "egoCar");
+		
 		Car car1(Vect3(-10, 4, 0), Vect3(4, 2, 2), Color(0, 0, 1), 5, 0, 2, "car1");
 		
 		std::vector<accuation> car1_instructions;
@@ -29,10 +36,13 @@ public:
 		car1_instructions.push_back(a);
 	
 		car1.setInstructions(car1_instructions);
-		UKF ukf1;
-		car1.setUKF(ukf1);
+		if( trackCars[0] )
+		{
+			UKF ukf1;
+			car1.setUKF(ukf1);
+		}
 		traffic.push_back(car1);
-	
+		
 		Car car2(Vect3(25, -4, 0), Vect3(4, 2, 2), Color(0, 0, 1), -6, 0, 2, "car2");
 		std::vector<accuation> car2_instructions;
 		a = accuation(4.0*1e6, 3.0, 0.0);
@@ -40,8 +50,11 @@ public:
 		a = accuation(8.0*1e6, 0.0, 0.0);
 		car2_instructions.push_back(a);
 		car2.setInstructions(car2_instructions);
-		UKF ukf2;
-		car2.setUKF(ukf2);
+		if( trackCars[1] )
+		{
+			UKF ukf2;
+			car2.setUKF(ukf2);
+		}
 		traffic.push_back(car2);
 	
 		Car car3(Vect3(-12, 0, 0), Vect3(4, 2, 2), Color(0, 0, 1), 1, 0, 2, "car3");
@@ -61,8 +74,11 @@ public:
 		a = accuation(7.5*1e6, 0.0, 0.0);
 		car3_instructions.push_back(a);
 		car3.setInstructions(car3_instructions);
-		UKF ukf3;
-		car3.setUKF(ukf3);
+		if( trackCars[2] )
+		{
+			UKF ukf3;
+			car3.setUKF(ukf3);
+		}
 		traffic.push_back(car3);
 	
 		// render environment
@@ -75,25 +91,23 @@ public:
 	
 	void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl::visualization::PCLVisualizer::Ptr& viewer)
 	{
-		// ----------------------------------------------------
-		// -----Open 3D viewer and display simple highway -----
-		// ----------------------------------------------------
 	
-		// render environment
+		// render highway environment with poles
 		renderHighway(egoVelocity*timestamp/1e6, viewer);
+		egoCar.render(viewer);
 		
 		for (int i = 0; i < traffic.size(); i++)
 		{
 			traffic[i].move((double)1/frame_per_sec, timestamp);
 			traffic[i].render(viewer);
 			// Sense surrounding cars with lidar and radar
-			if(i > 0)
+			if(trackCars[i])
 			{
 				VectorXd gt(4);
 				gt << traffic[i].position.x, traffic[i].position.y, traffic[i].velocity*cos(traffic[i].angle), traffic[i].velocity*sin(traffic[i].angle);
 				tools.ground_truth.push_back(gt);
 				tools.lidarSense(traffic[i], viewer, timestamp);
-				tools.radarSense(traffic[i], traffic[0], viewer, timestamp);
+				tools.radarSense(traffic[i], egoCar, viewer, timestamp);
 				tools.ukfResults(traffic[i],viewer);
 				VectorXd estimate(4);
 				double v  = traffic[i].ukf.x_(2);

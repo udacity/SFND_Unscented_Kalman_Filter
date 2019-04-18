@@ -73,6 +73,10 @@ struct Car
 	//accuation instructions
 	std::vector<accuation> instructions;
 	int accuateIndex;
+
+	Car()
+		: position(Vect3(0,0,0)), dimensions(Vect3(0,0,0)), color(Color(0,0,0))
+	{}
  
 	Car(Vect3 setPosition, Vect3 setDimensions, Color setColor, float setVelocity, float setAngle, float setLf, std::string setName)
 		: position(setPosition), dimensions(setDimensions), color(setColor), velocity(setVelocity), angle(setAngle), Lf(setLf), name(setName)
