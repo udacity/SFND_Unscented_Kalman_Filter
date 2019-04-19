@@ -74,6 +74,9 @@ struct Car
 	std::vector<accuation> instructions;
 	int accuateIndex;
 
+	double sinNegTheta;
+	double cosNegTheta;
+
 	Car()
 		: position(Vect3(0,0,0)), dimensions(Vect3(0,0,0)), color(Color(0,0,0))
 	{}
@@ -85,6 +88,9 @@ struct Car
 		acceleration = 0;
 		steering = 0;
 		accuateIndex = -1;
+
+		sinNegTheta = sin(-angle);
+		cosNegTheta = cos(-angle);
 	}
 
 	// angle around z axis
@@ -159,6 +165,9 @@ struct Car
 		angle += velocity*steering*dt/Lf;
 		orientation = getQuaternion(angle);
 		velocity += acceleration*dt;
+
+		sinNegTheta = sin(-angle);
+		cosNegTheta = cos(-angle);
 	}
 
 	// collision helper function
@@ -169,8 +178,12 @@ struct Car
 
 	bool checkCollision(Vect3 point)
 	{
-		return (inbetween(point.x, position.x, dimensions.x / 2) && inbetween(point.y, position.y, dimensions.y / 2) && inbetween(point.z, position.z + dimensions.z / 3, dimensions.z / 3)) ||
-			(inbetween(point.x, position.x, dimensions.x / 4) && inbetween(point.y, position.y, dimensions.y / 2) && inbetween(point.z, position.z + dimensions.z * 5 / 6, dimensions.z / 6));
+		// check collision for rotated car
+		double xPrime = ((point.x-position.x) * cosNegTheta - (point.y-position.y) * sinNegTheta)+position.x;
+		double yPrime = ((point.y-position.y) * cosNegTheta + (point.x-position.x) * sinNegTheta)+position.y;
+
+		return (inbetween(xPrime, position.x, dimensions.x / 2) && inbetween(yPrime, position.y, dimensions.y / 2) && inbetween(point.z, position.z + dimensions.z / 3, dimensions.z / 3)) ||
+			(inbetween(xPrime, position.x, dimensions.x / 4) && inbetween(yPrime, position.y, dimensions.y / 2) && inbetween(point.z, position.z + dimensions.z * 5 / 6, dimensions.z / 6));
 
 	}
 };

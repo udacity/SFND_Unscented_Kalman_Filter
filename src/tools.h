@@ -3,6 +3,7 @@
 #include <vector>
 #include "Eigen/Dense"
 #include "render/render.h"
+#include <pcl/io/pcd_io.h>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -42,7 +43,7 @@ class Tools {
 	std::vector<VectorXd> estimations;
 	std::vector<VectorXd> ground_truth;
 	
-	double noise(double stddev);
+	double noise(double stddev, long long seedNum);
 	lmarker lidarSense(Car& car, pcl::visualization::PCLVisualizer::Ptr& viewer, long long timestamp, bool visualize);
 	rmarker radarSense(Car& car, Car ego, pcl::visualization::PCLVisualizer::Ptr& viewer, long long timestamp, bool visualize);
 	void ukfResults(Car car, pcl::visualization::PCLVisualizer::Ptr& viewer, double time, int steps);
@@ -50,6 +51,8 @@ class Tools {
 	* A helper method to calculate RMSE.
 	*/
 	VectorXd CalculateRMSE(const vector<VectorXd> &estimations, const vector<VectorXd> &ground_truth);
+	void savePcd(typename pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, std::string file);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr loadPcd(std::string file);
 	
 };
 

@@ -2,6 +2,7 @@
 // Handle logic for creating traffic on highway and animating it
 
 #include "render/render.h"
+#include "sensors/lidar.h"
 #include "tools.h"
 
 class Highway
@@ -12,8 +13,10 @@ public:
 	Car egoCar;
 	Tools tools;
 	bool pass = true;
-	std::vector<double> rmseThreshold = {0.37,0.2,1.1,0.7};
+	std::vector<double> rmseThreshold = {0.30,0.16,0.95,0.70};
 	std::vector<double> rmseFailLog = {0.0,0.0,0.0,0.0};
+	Lidar* lidar;
+	
 	// Parameters 
 	// --------------------------------
 	// Set which cars to track with UKF
@@ -21,6 +24,7 @@ public:
 	// Visualize sensor measurements
 	bool visualize_lidar = true;
 	bool visualize_radar = true;
+	bool visualize_pcd = false;
 	// Predict path in the future using UKF
 	double projectedTime = 0;
 	int projectedSteps = 0;
@@ -90,6 +94,8 @@ public:
 			car3.setUKF(ukf3);
 		}
 		traffic.push_back(car3);
+
+		lidar = new Lidar(traffic,0);
 	
 		// render environment
 		renderHighway(0,viewer);
@@ -101,7 +107,14 @@ public:
 	
 	void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl::visualization::PCLVisualizer::Ptr& viewer)
 	{
-	
+
+		if(visualize_pcd)
+		{
+			pcl::PointCloud<pcl::PointXYZ>::Ptr trafficCloud = tools.loadPcd("../src/sensors/data/pcd/highway_"+std::to_string(timestamp)+".pcd");
+			renderPointCloud(viewer, trafficCloud, "trafficCloud", Color((float)184/256,(float)223/256,(float)252/256));
+		}
+		
+
 		// render highway environment with poles
 		renderHighway(egoVelocity*timestamp/1e6, viewer);
 		egoCar.render(viewer);
@@ -109,7 +122,8 @@ public:
 		for (int i = 0; i < traffic.size(); i++)
 		{
 			traffic[i].move((double)1/frame_per_sec, timestamp);
-			traffic[i].render(viewer);
+			if(!visualize_pcd)
+				traffic[i].render(viewer);
 			// Sense surrounding cars with lidar and radar
 			if(trackCars[i])
 			{

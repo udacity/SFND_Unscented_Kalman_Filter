@@ -8,9 +8,10 @@ Tools::Tools() {}
 
 Tools::~Tools() {}
 
-double Tools::noise(double stddev)
+double Tools::noise(double stddev, long long seedNum)
 {
-	auto dist = std::bind(std::normal_distribution<double>{0, stddev}, std::mt19937(std::random_device{}()));
+	mt19937::result_type seed = seedNum;
+	auto dist = std::bind(std::normal_distribution<double>{0, stddev}, std::mt19937(seed));
 	return dist();
 }
 
@@ -21,7 +22,7 @@ lmarker Tools::lidarSense(Car& car, pcl::visualization::PCLVisualizer::Ptr& view
 	meas_package.sensor_type_ = MeasurementPackage::LASER;
   	meas_package.raw_measurements_ = VectorXd(2);
 
-	lmarker marker = lmarker(car.position.x + noise(0.15), car.position.y + noise(0.15));
+	lmarker marker = lmarker(car.position.x + noise(0.15,timestamp), car.position.y + noise(0.15,timestamp+1));
 	if(visualize)
 		viewer->addSphere(pcl::PointXYZ(marker.x,marker.y,3.0),0.5, 1, 0, 0,car.name+"_lmarker");
 
@@ -40,7 +41,7 @@ rmarker Tools::radarSense(Car& car, Car ego, pcl::visualization::PCLVisualizer::
 	double phi = atan2(car.position.y-ego.position.y,car.position.x-ego.position.x);
 	double rho_dot = (car.velocity*cos(car.angle)*rho*cos(phi) + car.velocity*sin(car.angle)*rho*sin(phi))/rho;
 
-	rmarker marker = rmarker(rho+noise(0.3), phi+noise(0.03), rho_dot+noise(0.3));
+	rmarker marker = rmarker(rho+noise(0.3,timestamp+2), phi+noise(0.03,timestamp+3), rho_dot+noise(0.3,timestamp+4));
 	if(visualize)
 	{
 		viewer->addLine(pcl::PointXYZ(ego.position.x, ego.position.y, 3.0), pcl::PointXYZ(ego.position.x+marker.rho*cos(marker.phi), ego.position.y+marker.rho*sin(marker.phi), 3.0), 1, 0, 1, car.name+"_rho");
@@ -116,5 +117,25 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
 
 	//return the result
 	return rmse;
+}
+
+void Tools::savePcd(typename pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, std::string file)
+{
+  pcl::io::savePCDFileASCII (file, *cloud);
+  std::cerr << "Saved " << cloud->points.size () << " data points to "+file << std::endl;
+}
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr Tools::loadPcd(std::string file)
+{
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+
+  if (pcl::io::loadPCDFile<pcl::PointXYZ> (file, *cloud) == -1) //* load the file
+  {
+    PCL_ERROR ("Couldn't read file \n");
+  }
+  //std::cerr << "Loaded " << cloud->points.size () << " data points from "+file << std::endl;
+
+  return cloud;
 }
 
