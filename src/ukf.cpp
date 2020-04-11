@@ -4,6 +4,7 @@
 #include <exception>
 #include <math.h>       /* isnan, sqrt */
 
+//#define LOG_CONSISTENCY // Enable or disable consistency check
 
 class unknownsensortype: public std::exception
 {
@@ -16,9 +17,18 @@ class unknownsensortype: public std::exception
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
+/**
+ * Utility functino to normalize the angle  
+ */
 void normalizeAngle(double& angle){
-  while (angle> M_PI) angle -= 2.*M_PI;
-  while (angle<-M_PI) angle += 2.*M_PI;  
+  angle = fmod(angle + M_PI, 2*M_PI);
+  if(angle < 0)
+    angle += 2*M_PI;
+  angle -= M_PI; 
+  
+  // The following methods has problem with high value of angles
+  //while (angle> M_PI) angle -= 2.*M_PI;
+  //while (angle<-M_PI) angle += 2.*M_PI;  
 }
 /**
  * Initializes Unscented Kalman filter
@@ -41,13 +51,7 @@ UKF::UKF() {
 
   // Process noise standard deviation yaw acceleration in rad/s^2
   std_yawdd_ = 1;
-  
-  std::cout << "[std_a_, std_yawdd_] = [" << std_a_ << ", " << std_yawdd_<<"]\n";
-  /**
-   * DO NOT MODIFY measurement noise values below.
-   * These are provided by the sensor manufacturer.
-   */
-
+    
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
 
@@ -63,24 +67,17 @@ UKF::UKF() {
   // Radar measurement noise standard deviation radius change in m/s
   std_radrd_ = 0.3;
   
-  /**
-   * End DO NOT MODIFY section for measurement noise values 
-   */
-  
-  /**
-   * TODO: Complete the initialization. See ukf.h for other member properties.
-   * Hint: one or more values initialized above might be wildly off...
-   */
+  // Radar covariance matrix
   R_radar_ = MatrixXd(3, 3);
   R_radar_ << std_radr_*std_radr_, 0, 0,
             0, std_radphi_*std_radphi_, 0,
             0, 0,std_radrd_*std_radrd_;
   
+  // Lidar covariance matrix
   R_lidar_ = MatrixXd(2, 2);
   R_lidar_ << std_laspx_*std_laspx_,0,
             0,std_laspy_*std_laspy_;  
   
-
   is_initialized_ = false;  
   n_x_    = 5;
   n_aug_  = 7;
@@ -93,29 +90,32 @@ UKF::UKF() {
     weights_(i) = weight;
   }
 
+  // Initialize sigma points
   Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1); 
+  Xsig_pred_.fill(0.);
 }
 
 UKF::~UKF() {}
 
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
-  /**
-   * TODO: Complete this function! Make sure you switch between lidar and radar
-   * measurements.
-   */
 
   if(is_initialized_){
+    // If the filter is initialized predict the state
     const double delta_t = (meas_package.timestamp_ - time_us_)/1e6;    
     Prediction(delta_t);    
   }
+
+  // Store the current time
   time_us_ = meas_package.timestamp_;
   switch (meas_package.sensor_type_)
   {
   case MeasurementPackage::SensorType::LASER:    
+    // Update using lidar measurments
     UpdateLidar(meas_package);
     break;
 
-  case MeasurementPackage::SensorType::RADAR:    
+  case MeasurementPackage::SensorType::RADAR:
+    // Update using radar measurments
     UpdateRadar(meas_package);
     break;
     
@@ -130,12 +130,7 @@ void UKF::Prediction(double delta_t) {
    * Predict sigma points, the state, 
    * and the state covariance matrix.
    */
-  //if(fabs(delta_t)<1e-4) return;
-  //std::cout << "Generate sigma points" << delta_t << std::endl;
-  
-  MatrixXd Xsig_aug;
-  Xsig_aug.fill(0.0);
-  
+   
   MatrixXd P_aug = MatrixXd(n_aug_, n_aug_);
   P_aug.fill(0.);
   P_aug.topLeftCorner(n_x_,n_x_) = P_;
@@ -144,9 +139,10 @@ void UKF::Prediction(double delta_t) {
   VectorXd x = VectorXd(n_aug_);
   x.fill(0.);
   x.topRows(n_x_) = x_;  
+
+  MatrixXd Xsig_aug;
   UKF::GenerateSigmaPoints(&Xsig_aug, x, P_aug, lambda_);
   
-
   // Predict sigma points
   for (int i = 0; i< 2*n_aug_+1; i++)
   {
@@ -216,14 +212,7 @@ void UKF::Prediction(double delta_t) {
   }  
 }
 
-void UKF::UpdateLidar(MeasurementPackage meas_package) {
-  /**
-   * TODO: Complete this function! Use lidar data to update the belief 
-   * about the object's position. Modify the state vector, x_, and 
-   * covariance, P_.
-   * You can also calculate the lidar NIS, if desired.
-   */  
-    
+void UKF::UpdateLidar(MeasurementPackage meas_package) {   
   const int n_z = 2;
   VectorXd z = meas_package.raw_measurements_;
   if(!is_initialized_){    
@@ -281,18 +270,13 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   x_ = x_ + K * y;
   P_ = P_ - K*S*K.transpose();  
 
-  // Compute consistency
-  std::cout << "0, " << y.transpose()*S.inverse()*y << std::endl;
+#ifdef LOG_CONSISTENCY
+  // Log consistency value  chi-square distributed with 2 dof
+  std::cout << "LIDAR, " << y.transpose()*S.inverse()*y << std::endl;
+#endif
 }
 
-void UKF::UpdateRadar(MeasurementPackage meas_package) {
-  /**
-   * TODO: Complete this function! Use radar data to update the belief 
-   * about the object's position. Modify the state vector, x_, and 
-   * covariance, P_.
-   * You can also calculate the radar NIS, if desired.
-   */
-    
+void UKF::UpdateRadar(MeasurementPackage meas_package) {  
   static const int n_z = 3;
   VectorXd z = meas_package.raw_measurements_;
 
@@ -398,10 +382,11 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   x_ = x_ + K*y;
   normalizeAngle(x_(3));  
   P_ = P_ - K*S*K.transpose();
-
-
-  // Compute consistency  
-  std::cout << "1, " << y.transpose()*S.inverse()*y << std::endl;
+  
+#ifdef LOG_CONSISTENCY  
+  // Log consistency value  chi-square distributed with 3 dof
+  std::cout << "Radar, " << y.transpose()*S.inverse()*y << std::endl;
+#endif  
 }
 
 
@@ -425,5 +410,4 @@ void UKF::GenerateSigmaPoints(MatrixXd* Xsig_out, const VectorXd x, const Matrix
   
   //write result
   *Xsig_out = Xsig;
-
 }
