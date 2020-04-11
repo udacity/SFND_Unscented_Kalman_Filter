@@ -84,6 +84,9 @@ class UKF {
   // Radar measurement noise standard deviation radius change in m/s
   double std_radrd_ ;
 
+  // Measure covariance
+  Eigen::MatrixXd R_radar_, R_lidar_;
+
   // Weights of sigma points
   Eigen::VectorXd weights_;
 
@@ -95,6 +98,9 @@ class UKF {
 
   // Sigma point spreading parameter
   double lambda_;
+ 
+  private:
+  static void GenerateSigmaPoints(Eigen::MatrixXd* Xsig_out, const Eigen::VectorXd x, const Eigen::MatrixXd P, const double& lambda);
 };
 
 #endif  // UKF_H
