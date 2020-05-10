@@ -47,6 +47,9 @@ UKF::UKF()
   // initial augmented sigma point matrix
   Xsigma_aug_ = MatrixXd(n_aug_, 2 * n_aug_ + 1);
 
+  // initial predicted sigma point matrix
+  Xsigma_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
+
   // Process noise standard deviation longitudinal acceleration in m/s^2
   std_a_ = 30;
 
@@ -113,6 +116,58 @@ void UKF::GenerateAugmentedSigmaPoints()
   }
 }
 
+void UKF::PredictSigmaPoints(const double dt)
+{
+  double epsilon = 1e-5; // equal to zero threshold for yaw_rate
+  for (int i = 0; i < Xsigma_pred_.cols(); i++)
+  {
+    // Read data from augmented sigma point
+    double pos_x = Xsigma_aug_(0, i);
+    double pos_y = Xsigma_aug_(1, i);
+    double vel_abs = Xsigma_aug_(2, i);
+    double yaw_angle = Xsigma_aug_(3, i);
+    double yaw_rate = Xsigma_aug_(4, i);
+    double std_a = Xsigma_aug_(5, i);
+    double std_yawdd = Xsigma_aug_(6, i);
+
+    // Sigma point that will be predicted
+    double pos_x_pred;
+    double pos_y_pred;
+    double vel_abs_pred;
+    double yaw_angle_pred;
+    double yaw_rate_pred;
+
+    // Apply CTRV motion model
+    if (std::abs(yaw_rate) < epsilon) // if yaw_rate is 0
+    {
+      pos_x_pred = pos_x + vel_abs * dt * std::cos(yaw_angle);
+      pos_y_pred = pos_y + vel_abs * dt * std::sin(yaw_angle);
+    }
+    else
+    {
+      pos_x_pred = pos_x + (vel_abs / yaw_rate) * (std::sin(yaw_angle + yaw_rate * dt) - std::sin(yaw_angle));
+      pos_y_pred = pos_y + (vel_abs / yaw_rate) * (std::cos(yaw_angle) - std::cos(yaw_angle + yaw_rate * dt));
+    }
+    vel_abs_pred = vel_abs;
+    yaw_angle_pred = yaw_angle + yaw_rate * dt;
+    yaw_rate_pred = yaw_rate;
+
+    // Add noise
+    pos_x_pred = pos_x_pred + 0.5 * dt * dt * std::cos(yaw_angle) * std_a;
+    pos_y_pred = pos_y_pred + 0.5 * dt * dt * sin(yaw_angle) * std_a;
+    vel_abs_pred = vel_abs_pred + std_a * dt;
+    yaw_angle_pred = yaw_angle_pred + 0.5 * dt * dt * std_yawdd;
+    yaw_rate_pred = yaw_rate_pred + std_yawdd * dt;
+
+    // Write the predicted sigma point
+    Xsigma_pred_(0, i) = pos_x_pred;
+    Xsigma_pred_(1, i) = pos_y_pred;
+    Xsigma_pred_(2, i) = vel_abs_pred;
+    Xsigma_pred_(3, i) = yaw_angle_pred;
+    Xsigma_pred_(4, i) = yaw_rate_pred;
+  }
+}
+
 void UKF::ProcessMeasurement(MeasurementPackage meas_package)
 {
   /**
@@ -121,7 +176,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package)
    */
 }
 
-void UKF::Prediction(double delta_t)
+void UKF::Prediction(double dt)
 {
   /**
    * TODO: Complete this function! Estimate the object's location.

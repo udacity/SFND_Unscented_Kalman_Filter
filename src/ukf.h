@@ -30,6 +30,12 @@ public:
   void GenerateAugmentedSigmaPoints();
 
   /**
+   * PredictSigmaPoints
+   * @brief Predicts sigma points by processing augmented sigma points
+   */
+  void PredictSigmaPoints(const double dt);
+
+  /**
    * ProcessMeasurement
    * @param meas_package The latest measurement data of either radar or laser
    */
@@ -63,10 +69,10 @@ public:
   // if this is false, radar measurements will be ignored (except for init)
   bool use_radar_;
 
-  // state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
+  // state vector: [pos_x pos_y vel_abs yaw_angle yaw_rate] in SI units and rad
   Eigen::VectorXd x_;
 
-  // augmented state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate std_a std_yawdd] in SI units and rad
+  // augmented state vector: [pos_x pos_y vel_abs yaw_angle yaw_rate std_a std_yawdd] in SI units and rad
   Eigen::VectorXd x_aug_;
 
   // state covariance matrix
@@ -82,7 +88,7 @@ public:
   Eigen::MatrixXd Xsigma_aug_;
 
   // predicted sigma points matrix
-  Eigen::MatrixXd Xsig_pred_;
+  Eigen::MatrixXd Xsigma_pred_;
 
   // time when the state is true, in us
   long long time_us_;
