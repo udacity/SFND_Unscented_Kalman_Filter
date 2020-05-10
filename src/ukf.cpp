@@ -32,6 +32,9 @@ UKF::UKF()
   // initial covariance matrix
   P_ = MatrixXd(n_x_, n_x_);
 
+  // initial sigma points matrix
+  Xsigma_ = MatrixXd(n_x_, 2 * n_x_ + 1);
+
   // Process noise standard deviation longitudinal acceleration in m/s^2
   std_a_ = 30;
 
@@ -65,6 +68,17 @@ UKF::UKF()
 
 UKF::~UKF() {}
 
+void UKF::GenerateSigmaPoints()
+{
+  MatrixXd A = P_.llt().matrixL();
+  Xsigma_.col(0) = x_;
+  for (int i = 0; i < n_x_; ++i)
+  {
+    Xsigma_.col(i + 1) = x_ + sqrt(lambda_ + n_x_) * A.col(i);
+    Xsigma_.col(i + 1 + n_x_) = x_ - sqrt(lambda_ + n_x_) * A.col(i);
+  }
+}
+
 void UKF::ProcessMeasurement(MeasurementPackage meas_package)
 {
   /**
@@ -80,6 +94,8 @@ void UKF::Prediction(double delta_t)
    * Modify the state vector, x_. Predict sigma points, the state,
    * and the state covariance matrix.
    */
+
+  GenerateSigmaPoints();
 }
 
 void UKF::UpdateLidar(MeasurementPackage meas_package)

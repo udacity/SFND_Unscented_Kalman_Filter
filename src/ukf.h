@@ -4,8 +4,9 @@
 #include "Eigen/Dense"
 #include "measurement_package.h"
 
-class UKF {
- public:
+class UKF
+{
+public:
   /**
    * Constructor
    */
@@ -15,6 +16,8 @@ class UKF {
    * Destructor
    */
   virtual ~UKF();
+
+  void GenerateSigmaPoints();
 
   /**
    * ProcessMeasurement
@@ -41,7 +44,6 @@ class UKF {
    */
   void UpdateRadar(MeasurementPackage meas_package);
 
-
   // initially set to false, set to true in first call of ProcessMeasurement
   bool is_initialized_;
 
@@ -56,6 +58,9 @@ class UKF {
 
   // state covariance matrix
   Eigen::MatrixXd P_;
+
+  // sigma point matrix
+  Eigen::MatrixXd Xsigma_;
 
   // predicted sigma points matrix
   Eigen::MatrixXd Xsig_pred_;
@@ -82,7 +87,7 @@ class UKF {
   double std_radphi_;
 
   // Radar measurement noise standard deviation radius change in m/s
-  double std_radrd_ ;
+  double std_radrd_;
 
   // Weights of sigma points
   Eigen::VectorXd weights_;
@@ -97,4 +102,4 @@ class UKF {
   double lambda_;
 };
 
-#endif  // UKF_H
+#endif // UKF_H
