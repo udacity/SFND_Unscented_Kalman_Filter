@@ -20,6 +20,9 @@ UKF::UKF()
   // Sigma point spreading parameter
   lambda_ = 3 - n_x_;
 
+  // Augmented sigma point spreading parameter
+  lambda_aug_ = 3 - n_aug_;
+
   // if this is false, laser measurements will be ignored (except during init)
   use_laser_ = true;
 
@@ -29,11 +32,20 @@ UKF::UKF()
   // initial state vector
   x_ = VectorXd(n_x_);
 
+  // initial augmented state vector
+  x_aug_ = VectorXd(n_aug_);
+
   // initial covariance matrix
   P_ = MatrixXd(n_x_, n_x_);
 
-  // initial sigma points matrix
+  // initial augmented covariance matrix
+  P_aug_ = MatrixXd(n_aug_, n_aug_);
+
+  // initial sigma point matrix
   Xsigma_ = MatrixXd(n_x_, 2 * n_x_ + 1);
+
+  // initial augmented sigma point matrix
+  Xsigma_aug_ = MatrixXd(n_aug_, 2 * n_aug_ + 1);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
   std_a_ = 30;
@@ -79,6 +91,28 @@ void UKF::GenerateSigmaPoints()
   }
 }
 
+void UKF::GenerateAugmentedSigmaPoints()
+{
+  // add augmented part to mean state
+  x_aug_.head(n_x_) = x_;
+  x_aug_(n_x_) = std_a_;
+  x_aug_(n_x_ + 1) = std_yawdd_;
+
+  // add augmented part to covariance matrix
+  P_aug_.fill(0.0);
+  P_aug_.topLeftCorner(n_x_, n_x_) = P_;
+  P_aug_(n_x_, n_x_) = std_a_ * std_a_;
+  P_aug_(n_x_ + 1, n_x_ + 1) = std_yawdd_ * std_yawdd_;
+
+  MatrixXd A_aug = P_aug_.llt().matrixL();
+  Xsigma_aug_.col(0) = x_aug_;
+  for (int i = 0; i < n_aug_; ++i)
+  {
+    Xsigma_aug_.col(i + 1) = x_aug_ + sqrt(lambda_aug_ + n_aug_) * A_aug.col(i);
+    Xsigma_aug_.col(i + 1 + n_aug_) = x_aug_ - sqrt(lambda_aug_ + n_aug_) * A_aug.col(i);
+  }
+}
+
 void UKF::ProcessMeasurement(MeasurementPackage meas_package)
 {
   /**
@@ -96,6 +130,7 @@ void UKF::Prediction(double delta_t)
    */
 
   GenerateSigmaPoints();
+  GenerateAugmentedSigmaPoints();
 }
 
 void UKF::UpdateLidar(MeasurementPackage meas_package)

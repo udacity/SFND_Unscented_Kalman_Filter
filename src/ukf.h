@@ -17,7 +17,17 @@ public:
    */
   virtual ~UKF();
 
+  /**
+   * GenerateSigmaPoints
+   * @brief Generates sigma points based on posteior distribution(x_ and P_)
+   */
   void GenerateSigmaPoints();
+
+  /**
+   * GenerateAugmentedSigmaPoints
+   * @brief Generates augmented sigma points based on x_aug_ and P_aug_
+   */
+  void GenerateAugmentedSigmaPoints();
 
   /**
    * ProcessMeasurement
@@ -56,11 +66,20 @@ public:
   // state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
   Eigen::VectorXd x_;
 
+  // augmented state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate std_a std_yawdd] in SI units and rad
+  Eigen::VectorXd x_aug_;
+
   // state covariance matrix
   Eigen::MatrixXd P_;
 
+  // augmented state covariance matrix
+  Eigen::MatrixXd P_aug_;
+
   // sigma point matrix
   Eigen::MatrixXd Xsigma_;
+
+  // augmented sigma point matrix
+  Eigen::MatrixXd Xsigma_aug_;
 
   // predicted sigma points matrix
   Eigen::MatrixXd Xsig_pred_;
@@ -100,6 +119,9 @@ public:
 
   // Sigma point spreading parameter
   double lambda_;
+
+  // Augmented sigma point spreading parameter
+  double lambda_aug_;
 };
 
 #endif // UKF_H
