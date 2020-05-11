@@ -79,9 +79,21 @@ UKF::UKF()
   /**
    * End DO NOT MODIFY section for measurement noise values
    */
+
+  GenerateWeights();
 }
 
 UKF::~UKF() {}
+
+void UKF::GenerateWeights()
+{
+  weights_ = VectorXd(2 * n_aug_ + 1);
+  weights_(0) = lambda_aug_ / (lambda_aug_ + n_aug_);
+  for (int i = 1; i < weights_.size(); i++)
+  {
+    weights_(i) = 1.0 / (2 * (lambda_aug_ + n_aug_));
+  }
+}
 
 void UKF::GenerateSigmaPoints()
 {

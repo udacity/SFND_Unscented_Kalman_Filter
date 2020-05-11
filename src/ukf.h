@@ -17,6 +17,12 @@ public:
    */
   virtual ~UKF();
 
+/**
+   * GenerateWeights
+   * @brief Generates weights for sigma points and covariance matrix
+   */
+  void GenerateWeights();
+
   /**
    * GenerateSigmaPoints
    * @brief Generates sigma points based on posteior distribution(x_ and P_)
