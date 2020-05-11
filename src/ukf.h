@@ -17,7 +17,7 @@ public:
    */
   virtual ~UKF();
 
-/**
+  /**
    * GenerateWeights
    * @brief Generates weights for sigma points and covariance matrix
    */
@@ -40,6 +40,12 @@ public:
    * @brief Predicts sigma points by processing augmented sigma points
    */
   void PredictSigmaPoints(const double dt);
+
+  /**
+   * PredictMeanState
+   * @brief Predicts mean state with weights
+   */
+  void PredictMeanState();
 
   /**
    * ProcessMeasurement
