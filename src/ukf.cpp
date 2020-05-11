@@ -191,6 +191,30 @@ void UKF::PredictMeanState()
   x_ = x_pred;
 }
 
+void UKF::PredictCovarianceMatrix()
+{
+  MatrixXd P_pred = MatrixXd(n_x_, n_x_);
+  P_pred.fill(0.0);
+  VectorXd x_diff;
+  for (int i = 0; i < weights_.size(); i++)
+  {
+    x_diff = Xsigma_pred_.col(i) - x_;
+
+    // Normalize yaw angle
+    while (x_diff(3) > M_PI)
+    {
+      x_diff(3) -= 2. * M_PI;
+    }
+    while (x_diff(3) < -M_PI)
+    {
+      x_diff(3) += 2. * M_PI;
+    }
+
+    P_pred += weights_(i) * (x_diff) * (x_diff).transpose();
+  }
+  P_ = P_pred;
+}
+
 void UKF::ProcessMeasurement(MeasurementPackage meas_package)
 {
   /**
@@ -210,6 +234,8 @@ void UKF::Prediction(double dt)
   GenerateSigmaPoints();
   GenerateAugmentedSigmaPoints();
   PredictSigmaPoints(dt);
+  PredictMeanState();
+  PredictCovarianceMatrix();
 }
 
 void UKF::UpdateLidar(MeasurementPackage meas_package)

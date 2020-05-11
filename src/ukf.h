@@ -48,6 +48,12 @@ public:
   void PredictMeanState();
 
   /**
+   * PredictCovarianceMatrix
+   * @brief Predicts covariance matrix with weights
+   */
+  void PredictCovarianceMatrix();
+
+  /**
    * ProcessMeasurement
    * @param meas_package The latest measurement data of either radar or laser
    */
