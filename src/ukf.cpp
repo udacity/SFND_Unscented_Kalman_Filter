@@ -62,7 +62,7 @@ UKF::UKF() {
   for (int i = 1; i<weights_.size(); ++i){
     weights_[i] = 1.0 / (2.0*(lambda_ + n_aug_));
   }
-  Xsig_pred_ = MatrixXd(n_x_, n_sigma_);
+  Xsig_pred_ = MatrixXd((int) n_x_, (int) n_sigma_);
 }
 
 UKF::~UKF() {}
@@ -72,6 +72,57 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
    * TODO: Complete this function! Make sure you switch between lidar and radar
    * measurements.
    */
+  if (is_initialized_) {
+    double dt = (meas_package.timestamp_ - time_us_) / 1000000.0;
+    Prediction(dt);
+    switch (meas_package.sensor_type_)
+    {
+      case MeasurementPackage::LASER:
+        if (use_laser_) { UpdateLidar(meas_package); }
+        break;
+      case MeasurementPackage::RADAR:
+        if (use_radar_) { UpdateRadar(meas_package); }
+        break;
+      default:
+        break;
+    }
+  }
+  else {
+    double x, y;
+    switch (meas_package.sensor_type_)
+    {
+      case MeasurementPackage::LASER:
+        x = meas_package.raw_measurements_[0];
+        y = meas_package.raw_measurements_[1];
+        P_ << std_laspx_ * std_laspx_, 0, 0, 0, 0,
+              0, std_laspy_ * std_laspy_, 0, 0, 0,
+              0, 0, 1, 0, 0,
+              0, 0, 0, 1, 0,
+              0, 0, 0, 0, 1;
+        x_ << x, y, 0, 0, 0;
+        break;
+      case MeasurementPackage::RADAR:
+      
+        auto Rho = meas_package.raw_measurements_(0);
+        auto Phi = meas_package.raw_measurements_(1);
+        float Rho_dot = meas_package.raw_measurements_(2);
+        x = Rho * cos(Phi);
+        y = Rho * sin(Phi);
+        P_ << std_laspy_ * std_radr_, 0, 0, 0, 0,
+              0, std_radr_ * std_radr_,  0, 0, 0,
+              0, 0, std_radrd_ * std_radrd_, 0, 0,
+              0, 0, 0, std_radphi_ * std_radphi_, 0,
+              0, 0, 0, 0, 1;
+        //x_ << x, y, 0, 0, 0;
+      
+        break;
+      //default:
+      //  exit(-1);
+      //  break;
+    }
+    time_us_ = meas_package.timestamp_;
+    is_initialized_ = true;
+  }  
 }
 
 void UKF::Prediction(double delta_t) {
