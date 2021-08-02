@@ -4,6 +4,8 @@
 #include "Eigen/Dense"
 #include "measurement_package.h"
 
+#include <vector>
+
 class UKF {
  public:
   /**
@@ -41,7 +43,15 @@ class UKF {
    */
   void UpdateRadar(MeasurementPackage meas_package);
 
+  /**
+   * @brief The propagation model f(x, nu)
+   *
+   * @param point Inidividual sigma point to propagate
+   * @param nu Process noise model
+   */
+  Eigen::VectorXd Propagate(Eigen::VectorXd& x, double& detla_t);
 
+  Eigen::MatrixXd GenerateSigmaPoints(Eigen::VectorXd& x_augmented, Eigen::MatrixXd& P_augmented);
   // initially set to false, set to true in first call of ProcessMeasurement
   bool is_initialized_;
 
@@ -85,7 +95,7 @@ class UKF {
   double std_radrd_ ;
 
   // Weights of sigma points
-  Eigen::VectorXd weights_;
+  std::vector weights_;
 
   // State dimension
   int n_x_;
@@ -95,6 +105,9 @@ class UKF {
 
   // Sigma point spreading parameter
   double lambda_;
+
+  // Sigma size
+  double n_sigma_;
 };
 
 #endif  // UKF_H
