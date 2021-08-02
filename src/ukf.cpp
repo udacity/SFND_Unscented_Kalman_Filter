@@ -58,8 +58,7 @@ UKF::UKF() {
   n_aug_ = 7;
   n_sigma_ = 2*n_x_ - 1;
   lambda_ = 3.0 - n_aug_;
-  weights_(n_sigma_, 0.0);
-  weights_(0) = lambda_ / (lambda_ + n_aug_);
+  weights_[0] = lambda_ / (lambda_ + n_aug_);
   for (int i = 1; i<weights_.size(); ++i){
     weights_[i] = 1.0 / (2.0*(lambda_ + n_aug_));
   }

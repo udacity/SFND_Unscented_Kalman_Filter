@@ -95,7 +95,7 @@ class UKF {
   double std_radrd_ ;
 
   // Weights of sigma points
-  std::vector weights_;
+  std::vector<double> weights_;
 
   // State dimension
   int n_x_;
