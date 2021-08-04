@@ -32,8 +32,7 @@ public:
 
 	Highway(pcl::visualization::PCLVisualizer::Ptr& viewer)
 	{
-		std::cout << "Marker2\n";
-	
+
 		tools = Tools();
 	
 		egoCar = Car(Vect3(0, 0, 0), Vect3(4, 2, 2), Color(0, 1, 0), 0, 0, 2, "egoCar");
@@ -49,7 +48,6 @@ public:
 		car1_instructions.push_back(a);
 		a = accuation(4.4*1e6, -2.0, 0.0);
 		car1_instructions.push_back(a);
-		std::cout << "Marker\n";
 	
 		car1.setInstructions(car1_instructions);
 		if( trackCars[0] )
@@ -57,8 +55,6 @@ public:
 			UKF ukf1;
 			car1.setUKF(ukf1);
 		}
-		std::cout << "Marker\n";
-	
 		traffic.push_back(car1);
 		
 		Car car2(Vect3(25, -4, 0), Vect3(4, 2, 2), Color(0, 0, 1), -6, 0, 2, "car2");

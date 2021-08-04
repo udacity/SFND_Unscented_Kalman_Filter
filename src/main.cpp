@@ -4,7 +4,6 @@
 
 //#include "render/render.h"
 #include "highway.h"
-#include <iostream>
 
 int main(int argc, char** argv)
 {
@@ -16,10 +15,9 @@ int main(int argc, char** argv)
 	viewer->initCameraParameters();
 	float x_pos = 0;
 	viewer->setCameraPosition ( x_pos-26, 0, 15.0, x_pos+25, 0, 0, 0, 0, 1);
-	std::cout << "Marker1\n";
-	
+
 	Highway highway(viewer);
-	
+
 	//initHighway(viewer);
 
 	int frame_per_sec = 30;
@@ -28,7 +26,7 @@ int main(int argc, char** argv)
 	int time_us = 0;
 
 	double egoVelocity = 25;
-	std::cout<<"Entering main loop.\n";
+
 	while (frame_count < (frame_per_sec*sec_interval))
 	{
 		viewer->removeAllPointClouds();
