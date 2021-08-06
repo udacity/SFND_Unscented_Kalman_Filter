@@ -44,15 +44,18 @@ class UKF {
    */
   void UpdateRadar(MeasurementPackage meas_package);
 
+  //void GenerateSigmaPoints();
+  
   /**
    * @brief The propagation model f(x, nu)
    *
    * @param point Inidividual sigma point to propagate
    * @param nu Process noise model
    */
-  Eigen::VectorXd Propagate(Eigen::VectorXd& x, double& detla_t);
+  //Eigen::VectorXd Propagate(Eigen::VectorXd point, double dt);
+  //Eigen::MatrixXd PredictRadarMeasurement(MeasurementPackage meas_package);
+  //Eigen::MatrixXd PredictLidarMeasurement(MeasurementPackage meas_package);
 
-  void GenerateSigmaPoints();
   // initially set to false, set to true in first call of ProcessMeasurement
   bool is_initialized_;
 
