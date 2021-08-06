@@ -8,11 +8,13 @@ using Eigen::VectorXd;
  * Initializes Unscented Kalman filter
  */
 UKF::UKF() {
+  is_initialized_ = false;
+
   // if this is false, laser measurements will be ignored (except during init)
   use_laser_ = true;
 
   // if this is false, radar measurements will be ignored (except during init)
-  use_radar_ = true;
+  use_radar_ = false;
 
   // initial state vector
   x_ = VectorXd(5);
@@ -21,10 +23,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 30;
+  std_a_ = 0.30;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 30;
+  std_yawdd_ = 0.30;
   
   /**
    * DO NOT MODIFY measurement noise values below.
@@ -54,7 +56,6 @@ UKF::UKF() {
    * TODO: Complete the initialization. See ukf.h for other member properties.
    * Hint: one or more values initialized above might be wildly off...
    */
-  is_initialized_ = false;
   n_x_ = 5;
   n_aug_ = 7;
   lambda_ = 3.0 - n_x_;
@@ -98,6 +99,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       break;
     }
     default:
+      std::cout << "Measurement not recognized.\n";
       break;
     }
   }
@@ -117,7 +119,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
         P_.topLeftCorner(2,2) = R_Laser;
         is_initialized_ = true;
         time_us_ = meas_package.timestamp_;
-        break;
       }
       case MeasurementPackage::RADAR:
       {
@@ -133,7 +134,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
         P_.topLeftCorner(3,3) = R_Radar;
         is_initialized_ = true;
         time_us_ = meas_package.timestamp_;
-        break;
       }
       default:
         std::cout << "Measurement not recognized. Initialization incomplete.\n";
@@ -250,8 +250,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   for (int i=0; i<n_sigma_; ++i){
     Eigen::VectorXd diff = Zsig.col(i) - z_pred;
     // Angle normalization
-    while (diff[1] > M_PI)  { diff[1] -= 2.0 * M_PI; }
-    while (diff[1] < -M_PI) { diff[1] += 2.0 * M_PI; }
+    //while (diff[1] > M_PI)  { diff[1] -= 2.0 * M_PI; }
+    //while (diff[1] < -M_PI) { diff[1] += 2.0 * M_PI; }
     S += weights_[i]*diff*diff.transpose();
   }
   // Add noise
@@ -261,12 +261,12 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   T.fill(0.0);
   for (int i=0; i<n_sigma_; ++i){
     VectorXd z_diff = Zsig.col(i) - z_pred;
-    while (z_diff[1] > M_PI)  { z_diff[1] -= 2.0*M_PI; }
-    while (z_diff[1] < -M_PI) { z_diff[1] += 2.0*M_PI; }
+    //while (z_diff[1] > M_PI)  { z_diff[1] -= 2.0*M_PI; }
+    //while (z_diff[1] < -M_PI) { z_diff[1] += 2.0*M_PI; }
     //std::cout << "Zdiff:"<<z_diff.transpose()<<"\n------\n";
     Eigen::VectorXd x_diff = Xsig_pred_.col(i) - x_;
-    while (x_diff[3] > M_PI)  { x_diff[3] -= 2.0*M_PI; }
-    while (x_diff[3] < -M_PI) { x_diff[3] += 2.0*M_PI; }
+    //while (x_diff[3] > M_PI)  { x_diff[3] -= 2.0*M_PI; }
+    //while (x_diff[3] < -M_PI) { x_diff[3] += 2.0*M_PI; }
     //std::cout << "Xdiff: "<<x_diff.transpose()<<"\n-----\n";
     //std::cout << x_diff * z_diff.transpose();
     T = T + weights_[i] * x_diff * z_diff.transpose();
@@ -296,6 +296,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   Zsig.fill(0.0);
   Eigen::VectorXd z_pred(n_z_);
   z_pred.fill(0.0);
+  //std::cout << "marker\n";
   for (int i=0; i<n_sigma_; ++i){
     // Extract values
     double p_x = Xsig_pred_(0,i);
@@ -308,6 +309,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     Zsig(2,i) = (p_x*cos(yaw)*v + p_y*sin(yaw)*v) / sqrt(p_x*p_x + p_y*p_y);
     z_pred += weights_[i]*Zsig.col(i);
   }
+  
   // Create innovation covariance matrix S
   Eigen::MatrixXd S(n_z_, n_z_);
   S.fill(0.0);
@@ -336,6 +338,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     T = T + weights_[i] * x_diff * z_diff.transpose();
     //std::cout << "T:\n"<<T<<"\n";
   }
+  
   //std::cout<<"MARKER\n";
   // Calculate Kalman gain
   Eigen::MatrixXd K = T * S.inverse();
